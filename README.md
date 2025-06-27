@@ -1,0 +1,1 @@
+I cnat figure this game out. I had it pretty much perfect and then the game screen broke and now the buttons dont work. If anyone comes across this please help... im just a teacher try to make things more engaging without the budget to. 
