@@ -1,0 +1,612 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Grammar Game</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #fceff9;
+      background-image: radial-gradient(#ffd6ec 5%, transparent 6%), radial-gradient(#ffd6ec 5%, transparent 6%);
+      background-size: 40px 40px;
+      background-position: 0 0, 20px 20px;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 18px;
+      background-color: #ffaad4;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ff90c2;
+    }
+    #sentence-container, #word-bank {
+      margin: 20px auto;
+      padding: 10px;
+      border: 2px dashed #ccc;
+      min-height: 60px;
+      width: 80%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      background-color: white;
+      border-radius: 10px;
+      position: relative;
+    }
+    .word {
+      margin: 5px;
+      padding: 10px 15px;
+      background: #fff6fc;
+      border: 2px solid #ffaad4;
+      border-radius: 10px;
+      cursor: grab;
+      user-select: none;
+      font-size: 18px;
+      touch-action: none;
+      position: relative;
+      z-index: 1;
+    }
+    .flash-red {
+      animation: flashRed 0.4s alternate 3;
+    }
+    @keyframes flashRed {
+      0% { background-color: #fff6fc; }
+      100% { background-color: #ffb3b3; }
+    }
+    #stars {
+      font-size: 20px;
+      margin-top: 10px;
+    }
+    .star-float {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      font-size: 40px;
+      color: gold;
+      animation: floatUp 1s ease-out forwards;
+      pointer-events: none;
+      z-index: 10;
+    }
+    @keyframes floatUp {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -150%) scale(2); opacity: 0; }
+    }
+    #translation {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #444;
+      font-style: italic;
+      min-height: 1.5em;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    #translation.visible {
+      opacity: 1;
+    }
+    #progress-container {
+      width: 80%;
+      height: 20px;
+      margin: 20px auto 10px auto;
+      background-color: #eee;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #ffaad4, #ffc0cb, #ffe0eb);
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="start-screen">
+    <h1>Unscramble!</h1>
+    <button onclick="startLesson(1)">未来形</button>
+    <button onclick="startLesson(2)">するとき</button>
+    <button onclick="startLesson(3)">もし…</button>
+    <button onclick="startLesson(4)">…と思う</button>
+    <button onclick="startLesson(5)">きっと…だ</button>
+    <button onclick="startLesson(6)">すること</button>
+    <button onclick="startLesson(7)">するために</button>
+    <button onclick="startLesson(8)">しなければならない</button>
+    <button onclick="startLesson(9)">してはいけない</button>
+    <button onclick="startLesson(10)">があります</button>
+    <button onclick="startLesson(11)">すること</button>
+    <button onclick="startLesson(12)">しなければならない・してなくてもよい</button>
+    <button onclick="startLesson(13)">人にものを…する</button>
+    <button onclick="startLesson(14)">AをBと呼ぶ</button>
+    <button onclick="startLesson(15)">どのように…する</button>
+    <button onclick="startLesson(16)">...よりも</button>
+    <button onclick="startLesson(17)">最上級</button>
+    <button onclick="startLesson(18)">…と同じくらい</button>
+    <button onclick="startLesson(19)">したことがあります</button>
+    <button onclick="startLesson(20)">したことがありますか</button>
+    <button onclick="startLesson(21)">人に…が～だということおをする</button>
+  </div>
+
+  <div id="game-screen" style="display:none;">
+    <h2 id="lesson-title"></h2>
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    <div id="translation"></div>
+    <div id="sentence-container" class="drop-zone"></div>
+    <div id="word-bank"></div>
+    <div id="stars">Stars: <span id="star-count">0</span></div>
+    <button onclick="goBackToMenu()">Back to Main Menu</button>
+  </div>
+
+  <div id="star-animation"></div>
+  <audio id="correct-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6cf3e05f70.mp3" preload="auto"></audio>
+
+
+
+
+<script>
+   const lessons = {
+    1: [
+  { scrambled: ["I", "won't", "go", "to", "school", "tomorrow."], answer: ["I", "won't", "go", "to", "school", "tomorrow."], translation: "私は明日学校へ行きません。"  },
+  { scrambled: ["He", "is", "not", "going", "to", "play", "baseball."], answer: ["He", "is", "not", "going", "to", "play", "baseball."], translation: "彼は野球をする予定ではありません。"},
+  { scrambled: ["We", "won't", "eat", "hamburgers", "tonight."],    answer: ["We", "won't", "eat", "hamburgers", "tonight."], translation: "私たちは今夜ハンバーガーを食べません。"  },
+  { scrambled: ["She", "is", "not", "going", "to", "study", "math."],    answer: ["She", "is", "not", "going", "to", "study", "math."],    translation: "彼女は数学を勉強する予定ではありません。" },
+  { scrambled: ["They", "won't", "watch", "a", "movie", "tonight."],    answer: ["They", "won't", "watch", "a", "movie", "tonight."],    translation: "彼らは今夜映画を見ません。"  },
+  { scrambled: ["My", "father", "will", "cook", "dinner", "tonight."], answer: ["My", "father", "will", "cook", "dinner", "tonight."], translation: "私の父は今夜夕食を作ります。" },
+  { scrambled: ["Is", "she", "going", "to", "watch", "TV?"],    answer: ["Is", "she", "going", "to", "watch", "TV?"],    translation: "彼女はテレビを見る予定ですか？"  },
+  { scrambled: ["I", "am", "going", "to", "write", "a", "letter."],    answer: ["I", "am", "going", "to", "write", "a", "letter."],    translation: "私は手紙を書く予定です。"},
+  { scrambled: ["We", "will", "visit", "our", "grandparents", "soon."],    answer: ["We", "will", "visit", "our", "grandparents", "soon."],    translation: "私たちはすぐに祖父母を訪れます。"}
+],
+   2: [
+  { scrambled: ["I", "wash", "my", "hands", "before", "I", "eat."], answer: ["I", "wash", "my", "hands", "before", "I", "eat."], translation: "私は食べる前に手を洗います。" },
+  { scrambled: ["He", "calls", "me", "when", "he", "gets", "home."], answer: ["He", "calls", "me", "when", "he", "gets", "home."], translation: "彼は家に着いたとき私に電話します。" },
+  { scrambled: ["She", "was", "reading", "a", "book", "while", "I", "was", "cooking."], answer: ["She", "was", "reading", "a", "book", "while", "I", "was", "cooking."], translation: "私が料理している間、彼女は本を読んでいました。" },
+  { scrambled: ["We", "played", "outside", "after", "we", "finished", "lunch."], answer: ["We", "played", "outside", "after", "we", "finished", "lunch."], translation: "昼ごはんの後に外で遊びました。" },
+  { scrambled: ["When", "you", "see", "him,", "please", "say", "hello."], answer: ["When", "you", "see", "him,", "please", "say", "hello."], translation: "彼に会ったら、あいさつしてね。" },
+  { scrambled: ["Before", "you", "go", "to", "bed,", "brush", "your", "teeth."], answer: ["Before", "you", "go", "to", "bed,", "brush", "your", "teeth."], translation: "寝る前に歯をみがいてください。" },
+  { scrambled: ["I", "was", "listening", "to", "music", "when", "she", "arrived."], answer: ["I", "was", "listening", "to", "music", "when", "she", "arrived."], translation: "彼女が来たとき、私は音楽を聞いていました。" },
+  { scrambled: ["He", "always", "drinks", "water", "after", "he", "runs."], answer: ["He", "always", "drinks", "water", "after", "he", "runs."], translation: "彼は走った後、いつも水を飲みます。" },
+  { scrambled: ["While", "we", "were", "walking,", "it", "started", "to", "rain."], answer: ["While", "we", "were", "walking,", "it", "started", "to", "rain."], translation: "歩いている間に雨が降り始めました。" },
+  { scrambled: ["Don't", "talk", "while", "you", "are", "eating."], answer: ["Don't", "talk", "while", "you", "are", "eating."], translation: "食べている間に話さないでください。" }
+    ],
+    3: [
+    { scrambled: ["If", "I", "don't", "study,", "I", "will", "fail."], answer: ["If", "I", "don't", "study,", "I", "will", "fail."], translation: "もし勉強しなければ、私は落ちます。" },
+  { scrambled: ["If", "you", "are", "tired,", "take", "a", "rest."], answer: ["If", "you", "are", "tired,", "take", "a", "rest."], translation: "疲れていたら、休んでください。" },
+  { scrambled: ["I", "will", "be", "happy", "if", "I", "see", "you."], answer: ["I", "will", "be", "happy", "if", "I", "see", "you."], translation: "もしあなたに会えたら、私はうれしいです。" },
+  { scrambled: ["If", "he", "studies,", "he", "will", "pass", "the", "test."], answer: ["If", "he", "studies,", "he", "will", "pass", "the", "test."], translation: "彼が勉強すれば、テストに合格します。" },
+  { scrambled: ["You", "won't", "get", "wet", "if", "you", "bring", "an", "umbrella."], answer: ["You", "won't", "get", "wet", "if", "you", "bring", "an", "umbrella."], translation: "傘を持っていけば、濡れません。" },
+  { scrambled: ["If", "it", "rains,", "we", "won't", "go", "to", "the", "park."], answer: ["If", "it", "rains,", "we", "won't", "go", "to", "the", "park."], translation: "もし雨が降ったら、公園に行きません。" },
+  { scrambled: ["If", "you", "don't", "hurry,", "you", "will", "miss", "the", "bus."], answer: ["If", "you", "don't", "hurry,", "you", "will", "miss", "the", "bus."], translation: "急がなければ、バスに乗り遅れます。" },
+  { scrambled: ["I", "won't", "go", "outside", "if", "it's", "cold."], answer: ["I", "won't", "go", "outside", "if", "it's", "cold."], translation: "寒ければ、外に出ません。" },
+  { scrambled: ["If", "you", "are", "hungry,", "eat", "something."], answer: ["If", "you", "are", "hungry,", "eat", "something."], translation: "お腹がすいたら、何かを食べてください。" },
+  { scrambled: ["If", "you", "help", "me,", "I", "will", "thank", "you."], answer: ["If", "you", "help", "me,", "I", "will", "thank", "you."], translation: "手伝ってくれたら、お礼を言います。" }
+      ],
+    4: [
+      { scrambled: ["I", "think", "that", "he", "is", "handsome."], answer: ["I", "think", "that", "he", "is", "handsome."], translation: "私は彼がハンサムだと思います。" },
+  { scrambled: ["She", "knows", "that", "I", "like", "music."], answer: ["She", "knows", "that", "I", "like", "music."], translation: "彼女は私が音楽が好きだと知っています。" },
+  { scrambled: ["I", "hope", "that", "we", "can", "win."], answer: ["I", "hope", "that", "we", "can", "win."], translation: "私たちが勝てることを願っています。" },
+  { scrambled: ["He", "thinks", "that", "English", "is", "fun."], answer: ["He", "thinks", "that", "English", "is", "fun."], translation: "彼は英語が楽しいと思っています。" },
+  { scrambled: ["I", "hear", "that", "she", "is", "sick."], answer: ["I", "hear", "that", "she", "is", "sick."], translation: "彼女が病気だと聞きました。" },
+  { scrambled: ["They", "don't", "think", "that", "it", "is", "easy."], answer: ["They", "don't", "think", "that", "it", "is", "easy."], translation: "彼らはそれが簡単だとは思っていません。" },
+  { scrambled: ["I", "don't", "know", "that", "boy."], answer: ["I", "don't", "know", "that", "boy."], translation: "私はその男の子を知りません。" },
+  { scrambled: ["We", "think", "that", "the", "test", "was", "difficult."], answer: ["We", "think", "that", "the", "test", "was", "difficult."], translation: "私たちはテストが難しかったと思います。" },
+  { scrambled: ["My", "mother", "knows", "that", "I", "am", "tired."], answer: ["My", "mother", "knows", "that", "I", "am", "tired."], translation: "母は私が疲れていると知っています。" },
+  { scrambled: ["I", "hope", "that", "you", "feel", "better."], answer: ["I", "hope", "that", "you", "feel", "better."], translation: "あなたの体調がよくなることを願っています。" }
+ ],
+    5: [
+       { scrambled: ["I", "am", "sure", "that", "she", "will", "come."], answer: ["I", "am", "sure", "that", "she", "will", "come."], translation: "私は彼女が来ると確信しています。" },
+  { scrambled: ["I", "am", "happy", "that", "you", "are", "here."], answer: ["I", "am", "happy", "that", "you", "are", "here."], translation: "あなたがここにいてうれしいです。" },
+  { scrambled: ["She", "is", "angry", "that", "he", "was", "late."], answer: ["She", "is", "angry", "that", "he", "was", "late."], translation: "彼女は彼が遅れたことに怒っています。" },
+  { scrambled: ["I", "am", "glad", "that", "we", "won", "the", "game."], answer: ["I", "am", "glad", "that", "we", "won", "the", "game."], translation: "私たちが試合に勝ってうれしいです。" },
+  { scrambled: ["He", "is", "sure", "that", "it", "will", "be", "fun."], answer: ["He", "is", "sure", "that", "it", "will", "be", "fun."], translation: "彼はそれが楽しいと確信しています。" },
+  { scrambled: ["I", "am", "sad", "that", "I", "can't", "go."], answer: ["I", "am", "sad", "that", "I", "can't", "go."], translation: "私は行けなくて悲しいです。" },
+  { scrambled: ["We", "are", "excited", "that", "the", "festival", "is", "tomorrow."], answer: ["We", "are", "excited", "that", "the", "festival", "is", "tomorrow."], translation: "お祭りが明日なので、私たちはわくわくしています。" },
+  { scrambled: ["He", "is", "worried", "that", "he", "will", "be", "late."], answer: ["He", "is", "worried", "that", "he", "will", "be", "late."], translation: "彼は遅れることを心配しています。" },
+  { scrambled: ["I", "am", "surprised", "that", "you", "know", "that."], answer: ["I", "am", "surprised", "that", "you", "know", "that."], translation: "あなたがそれを知っているなんて驚きです。" },
+  { scrambled: ["They", "are", "happy", "that", "school", "is", "over."], answer: ["They", "are", "happy", "that", "school", "is", "over."], translation: "学校が終わって彼らはうれしいです。" }
+   ],
+    6: [
+      { scrambled: ["My", "dream", "is", "to", "be", "a", "vet."], answer: ["My", "dream", "is", "to", "be", "a", "vet."], translation: "私の夢は獣医になることです。" },
+  { scrambled: ["I", "want", "to", "help", "animals."], answer: ["I", "want", "to", "help", "animals."], translation: "私は動物を助けることを望んでいます。" },
+  { scrambled: ["I", "like", "to", "read", "books."], answer: ["I", "like", "to", "read", "books."], translation: "私は本を読むことが好きです。" },
+  { scrambled: ["She", "wants", "to", "learn", "English."], answer: ["She", "wants", "to", "learn", "English."], translation: "彼女は英語を学ぶことを望んでいます。" },
+  { scrambled: ["He", "likes", "to", "draw", "animals."], answer: ["He", "likes", "to", "draw", "animals."], translation: "彼は動物を描くことが好きです。" },
+  { scrambled: ["I", "enjoy", "talking", "with", "children."], answer: ["I", "enjoy", "talking", "with", "children."], translation: "私は子どもと話すことを楽しんでいます。" },
+  { scrambled: ["We", "started", "to", "study", "math."], answer: ["We", "started", "to", "study", "math."], translation: "私たちは数学を勉強し始めました。" },
+  { scrambled: ["To", "be", "a", "pilot", "is", "his", "dream."], answer: ["To", "be", "a", "pilot", "is", "his", "dream."], translation: "パイロットになることが彼の夢です。" },
+  { scrambled: ["They", "hope", "to", "visit", "Canada."], answer: ["They", "hope", "to", "visit", "Canada."], translation: "彼らはカナダを訪れることを望んでいます。" },
+  { scrambled: ["I", "want", "to", "be", "a", "teacher."], answer: ["I", "want", "to", "be", "a", "teacher."], translation: "私は先生になることを望んでいます。" }
+  ],
+    7: [
+      { scrambled: ["People", "come", "to", "Japan", "to", "see", "cherry", "blossoms."], answer: ["People", "come", "to", "Japan", "to", "see", "cherry", "blossoms."], translation: "人々は桜を見るために日本に来ます。" },
+  { scrambled: ["I", "study", "English", "to", "talk", "with", "foreigners."], answer: ["I", "study", "English", "to", "talk", "with", "foreigners."], translation: "私は外国人と話すために英語を勉強します。" },
+  { scrambled: ["She", "goes", "to", "the", "library", "to", "read", "books."], answer: ["She", "goes", "to", "the", "library", "to", "read", "books."], translation: "彼女は本を読むために図書館に行きます。" },
+  { scrambled: ["We", "practice", "every", "day", "to", "win", "the", "game."], answer: ["We", "practice", "every", "day", "to", "win", "the", "game."], translation: "私たちは試合に勝つために毎日練習します。" },
+  { scrambled: ["I", "got", "up", "early", "to", "make", "breakfast."], answer: ["I", "got", "up", "early", "to", "make", "breakfast."], translation: "私は朝食を作るために早く起きました。" },
+  { scrambled: ["They", "went", "to", "the", "store", "to", "buy", "milk."], answer: ["They", "went", "to", "the", "store", "to", "buy", "milk."], translation: "彼らは牛乳を買うために店に行きました。" },
+  { scrambled: ["He", "works", "hard", "to", "be", "a", "doctor."], answer: ["He", "works", "hard", "to", "be", "a", "doctor."], translation: "彼は医者になるために一生懸命働いています。" },
+  { scrambled: ["I", "went", "to", "the", "park", "to", "take", "pictures."], answer: ["I", "went", "to", "the", "park", "to", "take", "pictures."], translation: "私は写真を撮るために公園に行きました。" },
+  { scrambled: ["She", "learns", "Japanese", "to", "live", "in", "Japan."], answer: ["She", "learns", "Japanese", "to", "live", "in", "Japan."], translation: "彼女は日本で住むために日本語を学んでいます。" },
+  { scrambled: ["We", "watch", "videos", "to", "learn", "English."], answer: ["We", "watch", "videos", "to", "learn", "English."], translation: "私たちは英語を学ぶためにビデオを見ます。" }
+  ],
+    8: [
+   { scrambled: ["You", "must", "do", "your", "homework."], answer: ["You", "must", "do", "your", "homework."], translation: "あなたは宿題をしなければなりません。" },
+  { scrambled: ["Students", "must", "wear", "a", "uniform."], answer: ["Students", "must", "wear", "a", "uniform."], translation: "生徒は制服を着なければなりません。" },
+  { scrambled: ["We", "must", "be", "quiet", "in", "the", "library."], answer: ["We", "must", "be", "quiet", "in", "the", "library."], translation: "図書館では静かにしなければなりません。" },
+  { scrambled: ["He", "must", "clean", "his", "room."], answer: ["He", "must", "clean", "his", "room."], translation: "彼は部屋を掃除しなければなりません。" },
+  { scrambled: ["I", "must", "study", "for", "the", "test."], answer: ["I", "must", "study", "for", "the", "test."], translation: "私はテストのために勉強しなければなりません。" },
+  { scrambled: ["You", "must", "bring", "your", "notebook."], answer: ["You", "must", "bring", "your", "notebook."], translation: "ノートを持ってこなければなりません。" },
+  { scrambled: ["We", "must", "wash", "our", "hands", "before", "lunch."], answer: ["We", "must", "wash", "our", "hands", "before", "lunch."], translation: "昼ごはんの前に手を洗わなければなりません。" },
+  { scrambled: ["They", "must", "come", "to", "school", "on", "time."], answer: ["They", "must", "come", "to", "school", "on", "time."], translation: "彼らは時間通りに学校に来なければなりません。" },
+  { scrambled: ["I", "must", "listen", "to", "the", "teacher."], answer: ["I", "must", "listen", "to", "the", "teacher."], translation: "私は先生の話を聞かなければなりません。" },
+  { scrambled: ["We", "must", "clean", "the", "classroom", "together."], answer: ["We", "must", "clean", "the", "classroom", "together."], translation: "私たちは一緒に教室を掃除しなければなりません。" }
+ ],
+    9: [
+    { scrambled: ["You", "must", "not", "run", "in", "the", "hallway."], answer: ["You", "must", "not", "run", "in", "the", "hallway."], translation: "廊下を走ってはいけません。" },
+  { scrambled: ["You", "must", "not", "forget", "your", "textbook."], answer: ["You", "must", "not", "forget", "your", "textbook."], translation: "教科書を忘れてはいけません。" },
+  { scrambled: ["You", "must", "not", "be", "late", "for", "class."], answer: ["You", "must", "not", "be", "late", "for", "class."], translation: "授業に遅れてはいけません。" },
+  { scrambled: ["They", "must", "not", "eat", "in", "the", "classroom."], answer: ["They", "must", "not", "eat", "in", "the", "classroom."], translation: "教室で食べてはいけません。" },
+  { scrambled: ["You", "must", "not", "use", "your", "phone", "in", "class."], answer: ["You", "must", "not", "use", "your", "phone", "in", "class."], translation: "授業中に携帯電話を使ってはいけません。" },
+  { scrambled: ["We", "must", "not", "talk", "during", "the", "test."], answer: ["We", "must", "not", "talk", "during", "the", "test."], translation: "テスト中に話してはいけません。" },
+  { scrambled: ["You", "must", "not", "open", "the", "window."], answer: ["You", "must", "not", "open", "the", "window."], translation: "窓を開けてはいけません。" },
+  { scrambled: ["They", "must", "not", "leave", "the", "room", "early."], answer: ["They", "must", "not", "leave", "the", "room", "early."], translation: "彼らは早く部屋を出てはいけません。" },
+  { scrambled: ["He", "must", "not", "sleep", "in", "class."], answer: ["He", "must", "not", "sleep", "in", "class."], translation: "彼は授業中に寝てはいけません。" },
+  { scrambled: ["We", "must", "not", "break", "the", "rules."], answer: ["We", "must", "not", "break", "the", "rules."], translation: "私たちはルールを破ってはいけません。" }
+ ],
+    10: [
+      { scrambled: ["There", "is", "a", "pen", "on", "the", "desk."], answer: ["There", "is", "a", "pen", "on", "the", "desk."], translation: "机の上にペンがあります。" },
+  { scrambled: ["There", "is", "a", "cat", "in", "the", "box."], answer: ["There", "is", "a", "cat", "in", "the", "box."], translation: "箱の中に猫がいます。" },
+  { scrambled: ["There", "is", "a", "book", "on", "the", "table."], answer: ["There", "is", "a", "book", "on", "the", "table."], translation: "テーブルの上に本があります。" },
+  { scrambled: ["There", "is", "a", "dog", "under", "the", "chair."], answer: ["There", "is", "a", "dog", "under", "the", "chair."], translation: "椅子の下に犬がいます。" },
+  { scrambled: ["There", "is", "a", "park", "near", "my", "house."], answer: ["There", "is", "a", "park", "near", "my", "house."], translation: "私の家の近くに公園があります。" },
+  { scrambled: ["There", "is", "a", "bird", "in", "the", "tree."], answer: ["There", "is", "a", "bird", "in", "the", "tree."], translation: "木の中に鳥がいます。" },
+  { scrambled: ["There", "is", "a", "letter", "on", "the", "floor."], answer: ["There", "is", "a", "letter", "on", "the", "floor."], translation: "床の上に手紙があります。" },
+  { scrambled: ["There", "is", "an", "apple", "in", "the", "bag."], answer: ["There", "is", "an", "apple", "in", "the", "bag."], translation: "かばんの中にりんごがあります。" },
+  { scrambled: ["There", "is", "a", "new", "student", "in", "our", "class."], answer: ["There", "is", "a", "new", "student", "in", "our", "class."], translation: "私たちのクラスに新しい生徒がいます。" },
+  { scrambled: ["There", "is", "some", "water", "on", "the", "floor."], answer: ["There", "is", "some", "water", "on", "the", "floor."], translation: "床に水があります。" }
+ ],
+    11: [
+      { scrambled: ["Swimming", "is", "fun."], answer: ["Swimming", "is", "fun."], translation: "泳ぐことは楽しいです。" },
+  { scrambled: ["I", "enjoy", "reading", "books."], answer: ["I", "enjoy", "reading", "books."], translation: "私は本を読むことを楽しんでいます。" },
+  { scrambled: ["He", "likes", "playing", "soccer."], answer: ["He", "likes", "playing", "soccer."], translation: "彼はサッカーをすることが好きです。" },
+  { scrambled: ["Listening", "to", "music", "is", "relaxing."], answer: ["Listening", "to", "music", "is", "relaxing."], translation: "音楽を聞くことはリラックスできます。" },
+  { scrambled: ["She", "hates", "doing", "homework."], answer: ["She", "hates", "doing", "homework."], translation: "彼女は宿題をすることが嫌いです。" },
+  { scrambled: ["We", "practice", "speaking", "English."], answer: ["We", "practice", "speaking", "English."], translation: "私たちは英語を話す練習をします。" },
+  { scrambled: ["I", "am", "good", "at", "drawing."], answer: ["I", "am", "good", "at", "drawing."], translation: "私は絵を描くことが得意です。" },
+  { scrambled: ["Watching", "TV", "is", "not", "interesting."], answer: ["Watching", "TV", "is", "not", "interesting."], translation: "テレビを見ることは面白くありません。" },
+  { scrambled: ["He", "enjoys", "cooking", "dinner."], answer: ["He", "enjoys", "cooking", "dinner."], translation: "彼は夕食を作ることを楽しんでいます。" },
+  { scrambled: ["Learning", "new", "words", "is", "important."], answer: ["Learning", "new", "words", "is", "important."], translation: "新しい単語を学ぶことは大切です。" }
+],
+     12: [
+      { scrambled: ["I", "have", "to", "do", "my", "homework."], answer: ["I", "have", "to", "do", "my", "homework."], translation: "私は宿題をしなければなりません。" },
+  { scrambled: ["You", "don’t", "have", "to", "bring", "your", "lunch."], answer: ["You", "don’t", "have", "to", "bring", "your", "lunch."], translation: "あなたはお弁当を持ってくる必要はありません。" },
+  { scrambled: ["She", "has", "to", "get", "up", "early."], answer: ["She", "has", "to", "get", "up", "early."], translation: "彼女は早く起きなければなりません。" },
+  { scrambled: ["We", "don’t", "have", "to", "wear", "a", "uniform."], answer: ["We", "don’t", "have", "to", "wear", "a", "uniform."], translation: "私たちは制服を着る必要はありません。" },
+  { scrambled: ["He", "has", "to", "help", "his", "mother."], answer: ["He", "has", "to", "help", "his", "mother."], translation: "彼はお母さんを手伝わなければなりません。" },
+  { scrambled: ["They", "don’t", "have", "to", "study", "today."], answer: ["They", "don’t", "have", "to", "study", "today."], translation: "彼らは今日は勉強しなくてもいいです。" },
+  { scrambled: ["I", "have", "to", "clean", "my", "room."], answer: ["I", "have", "to", "clean", "my", "room."], translation: "私は部屋を掃除しなければなりません。" },
+  { scrambled: ["You", "have", "to", "be", "quiet", "here."], answer: ["You", "have", "to", "be", "quiet", "here."], translation: "ここでは静かにしなければなりません。" },
+  { scrambled: ["We", "have", "to", "go", "home", "now."], answer: ["We", "have", "to", "go", "home", "now."], translation: "私たちは今帰らなければなりません。" },
+  { scrambled: ["He", "doesn’t", "have", "to", "do", "the", "dishes."], answer: ["He", "doesn’t", "have", "to", "do", "the", "dishes."], translation: "彼は皿を洗う必要はありません。"
+],
+    13: 
+   [
+      { scrambled: ["I", "will", "show", "you", "a", "picture."], answer: ["I", "will", "show", "you", "a", "picture."], translation: "私はあなたに写真を見せます。" },
+  { scrambled: ["She", "gave", "me", "a", "present."], answer: ["She", "gave", "me", "a", "present."], translation: "彼女は私にプレゼントをくれました。" },
+  { scrambled: ["He", "taught", "us", "English."], answer: ["He", "taught", "us", "English."], translation: "彼は私たちに英語を教えました。" },
+  { scrambled: ["They", "sent", "me", "a", "letter."], answer: ["They", "sent", "me", "a", "letter."], translation: "彼らは私に手紙を送りました。" },
+  { scrambled: ["I", "will", "give", "you", "this", "book."], answer: ["I", "will", "give", "you", "this", "book."], translation: "私はあなたにこの本をあげます。" },
+  { scrambled: ["My", "father", "bought", "me", "a", "watch."], answer: ["My", "father", "bought", "me", "a", "watch."], translation: "私の父は私に時計を買ってくれました。" },
+  { scrambled: ["The", "teacher", "gave", "us", "a", "hint."], answer: ["The", "teacher", "gave", "us", "a", "hint."], translation: "先生は私たちにヒントをくれました。" },
+  { scrambled: ["Can", "you", "show", "me", "your", "notebook?"], answer: ["Can", "you", "show", "me", "your", "notebook?"], translation: "あなたのノートを見せてくれますか？" },
+  { scrambled: ["She", "told", "me", "a", "story."], answer: ["She", "told", "me", "a", "story."], translation: "彼女は私に物語を話しました。" },
+  { scrambled: ["He", "made", "me", "a", "cake."], answer: ["He", "made", "me", "a", "cake."], translation: "彼は私にケーキを作ってくれました。" }
+   ],
+    14: 
+   [
+     { scrambled: ["We", "call", "him", "Ken."], answer: ["We", "call", "him", "Ken."], translation: "私たちは彼をケンと呼びます。" },
+  { scrambled: ["They", "call", "this", "place", "Peace", "Park."], answer: ["They", "call", "this", "place", "Peace", "Park."], translation: "彼らはこの場所を平和公園と呼びます。" },
+  { scrambled: ["I", "call", "my", "cat", "Mimi."], answer: ["I", "call", "my", "cat", "Mimi."], translation: "私は自分の猫をミミと呼びます。" },
+  { scrambled: ["It", "makes", "me", "happy."], answer: ["It", "makes", "me", "happy."], translation: "それは私をうれしくさせます。" },
+  { scrambled: ["That", "song", "makes", "me", "sad."], answer: ["That", "song", "makes", "me", "sad."], translation: "その歌は私を悲しくさせます。" },
+  { scrambled: ["He", "calls", "his", "grandfather", "Jiji."], answer: ["He", "calls", "his", "grandfather", "Jiji."], translation: "彼はおじいさんをジジと呼びます。" },
+  { scrambled: ["They", "call", "this", "dog", "Pochi."], answer: ["They", "call", "this", "dog", "Pochi."], translation: "彼らはこの犬をポチと呼びます。" },
+  { scrambled: ["That", "story", "makes", "me", "angry."], answer: ["That", "story", "makes", "me", "angry."], translation: "その話は私を怒らせます。" },
+  { scrambled: ["She", "calls", "her", "friend", "Ai-chan."], answer: ["She", "calls", "her", "friend", "Ai-chan."], translation: "彼女は友達をあいちゃんと呼びます。" },
+  { scrambled: ["Rainy", "days", "make", "me", "sleepy."], answer: ["Rainy", "days", "make", "me", "sleepy."], translation: "雨の日は私を眠くさせます。" }
+ ],
+   15: 
+   [
+     { scrambled: ["I", "learned", "how", "to", "cook."], answer: ["I", "learned", "how", "to", "cook."], translation: "私は料理の仕方を学びました。" },
+  { scrambled: ["She", "knows", "how", "to", "swim."], answer: ["She", "knows", "how", "to", "swim."], translation: "彼女は泳ぎ方を知っています。" },
+  { scrambled: ["Do", "you", "know", "how", "to", "use", "this?"], answer: ["Do", "you", "know", "how", "to", "use", "this?"], translation: "これの使い方を知っていますか？" },
+  { scrambled: ["He", "taught", "me", "how", "to", "ride", "a", "bike."], answer: ["He", "taught", "me", "how", "to", "ride", "a", "bike."], translation: "彼は私に自転車の乗り方を教えてくれました。" },
+  { scrambled: ["I", "don’t", "know", "how", "to", "play", "the", "guitar."], answer: ["I", "don’t", "know", "how", "to", "play", "the", "guitar."], translation: "私はギターの弾き方を知りません。" },
+  { scrambled: ["We", "will", "show", "you", "how", "to", "make", "sushi."], answer: ["We", "will", "show", "you", "how", "to", "make", "sushi."], translation: "私たちはあなたに寿司の作り方を教えます。" },
+  { scrambled: ["She", "forgot", "how", "to", "get", "home."], answer: ["She", "forgot", "how", "to", "get", "home."], translation: "彼女は家への帰り方を忘れました。" },
+  { scrambled: ["My", "dad", "knows", "how", "to", "fix", "cars."], answer: ["My", "dad", "knows", "how", "to", "fix", "cars."], translation: "私の父は車の直し方を知っています。" },
+  { scrambled: ["I", "want", "to", "learn", "how", "to", "draw."], answer: ["I", "want", "to", "learn", "how", "to", "draw."], translation: "私は絵の描き方を学びたいです。" },
+  { scrambled: ["Do", "they", "know", "how", "to", "dance?"], answer: ["Do", "they", "know", "how", "to", "dance?"], translation: "彼らはダンスの仕方を知っていますか？" }
+   ],
+   16: 
+   [
+      { scrambled: ["bigger", "than", "dogs.", "Elephants", "are"], answer: ["Elephants", "are", "bigger", "than", "dogs."], translation: "ゾウは犬よりも大きいです。" },
+  { scrambled: ["are", "lions.", "Cheetahs", "faster", "than"], answer: ["Cheetahs", "are", "faster", "than", "lions."], translation: "チーターはライオンよりも速いです。" },
+  { scrambled: ["Tokyo", "Tower.", "Mount", "is", "Fuji", "taller", "than"], answer: ["Mount", "Fuji", "is", "taller", "than", "Tokyo", "Tower."], translation: "富士山は東京タワーよりも高いです。" },
+  { scrambled: ["the", "moon.", "hotter", "The", "sun", "is", "than"], answer: ["The", "sun", "is", "hotter", "than", "the", "moon."], translation: "太陽は月よりも熱いです。" },
+  { scrambled: ["more", "Kyoto.", "crowded", "is", "Tokyo", "than"], answer: ["Tokyo", "is", "more", "crowded", "than", "Kyoto."], translation: "東京は京都よりも混んでいます。" },
+  { scrambled: ["is", "Australia.", "Japan", "than", "smaller"], answer: ["Japan", "is", "smaller", "than", "Australia."], translation: "日本はオーストラリアよりも小さいです。" },
+  { scrambled: ["Smartphones", "cameras.", "useful", "than", "more", "are"], answer: ["Smartphones", "are", "more", "useful", "than", "cameras."], translation: "スマートフォンはカメラよりも便利です。" },
+  { scrambled: ["quieter", "TV.", "Books", "than", "are"], answer: ["Books", "are", "quieter", "than", "TV."], translation: "本はテレビよりも静かです。" },
+  { scrambled: ["colder", "than", "is", "Winter", "summer."], answer: ["Winter", "is", "colder", "than", "summer."], translation: "冬は夏よりも寒いです。" },
+  { scrambled: ["buses.", "faster", "Trains", "are", "than"], answer: ["Trains", "are", "faster", "than", "buses."], translation: "電車はバスよりも速いです。" }
+   ],
+   17: 
+   [
+     { scrambled: ["is", "the", "Elephant", "biggest", "animal."], answer: ["The", "Elephant", "is", "the", "biggest", "animal."], translation: "ゾウは一番大きい動物です。" },
+  { scrambled: ["the", "Cheetah", "is", "fastest", "animal", "land."], answer: ["The", "Cheetah", "is", "the", "fastest", "land", "animal."], translation: "チーターは最も速い陸の動物です。" },
+  { scrambled: ["is", "the", "Mount", "tallest", "Fuji", "mountain", "in", "Japan."], answer: ["Mount", "Fuji", "is", "the", "tallest", "mountain", "in", "Japan."], translation: "富士山は日本で一番高い山です。" },
+  { scrambled: ["summer", "is", "the", "hottest", "season."], answer: ["Summer", "is", "the", "hottest", "season."], translation: "夏は一番暑い季節です。" },
+  { scrambled: ["January", "coldest", "month", "is", "the."], answer: ["January", "is", "the", "coldest", "month."], translation: "1月は一番寒い月です。" },
+  { scrambled: ["is", "animal", "the", "Blue", "Whale", "heaviest."], answer: ["The", "Blue", "Whale", "is", "the", "heaviest", "animal."], translation: "シロナガスクジラは最も重い動物です。" },
+  { scrambled: ["is", "the", "smallest", "bird", "Hummingbird."], answer: ["The", "Hummingbird", "is", "the", "smallest", "bird."], translation: "ハチドリは最も小さい鳥です。" },
+  { scrambled: ["Mt.", "Everest", "the", "tallest", "mountain", "is", "world.", "in", "the"], answer: ["Mt.", "Everest", "is", "the", "tallest", "mountain", "in", "the", "world."], translation: "エベレストは世界で一番高い山です。" },
+  { scrambled: ["the", "Antarctica", "coldest", "is", "place", "the", "in", "world."], answer: ["Antarctica", "is", "the", "coldest", "place", "in", "the", "world."], translation: "南極は世界で一番寒い場所です。" },
+  { scrambled: ["Japan", "is", "the", "safest", "countries", "one", "of."], answer: ["Japan", "is", "one", "of", "the", "safest", "countries."], translation: "日本は最も安全な国の一つです。" }
+  ],
+   18: 
+   [
+   { scrambled: ["This", "bag", "is", "as", "heavy", "as", "a", "rock."], answer: ["This", "bag", "is", "as", "heavy", "as", "a", "rock."], translation: "このかばんは岩のように重いです。" },
+  { scrambled: ["She", "is", "as", "tall", "as", "her", "brother."], answer: ["She", "is", "as", "tall", "as", "her", "brother."], translation: "彼女はお兄さんと同じくらい背が高いです。" },
+  { scrambled: ["My", "cat", "is", "as", "cute", "as", "a", "panda."], answer: ["My", "cat", "is", "as", "cute", "as", "a", "panda."], translation: "私の猫はパンダと同じくらいかわいいです。" },
+  { scrambled: ["This", "test", "is", "as", "easy", "as", "the", "last", "one."], answer: ["This", "test", "is", "as", "easy", "as", "the", "last", "one."], translation: "このテストは前のと同じくらい簡単です。" },
+  { scrambled: ["He", "can", "run", "as", "fast", "as", "a", "deer."], answer: ["He", "can", "run", "as", "fast", "as", "a", "deer."], translation: "彼は鹿と同じくらい速く走れます。" },
+  { scrambled: ["The", "movie", "was", "as", "funny", "as", "a", "comedy", "show."], answer: ["The", "movie", "was", "as", "funny", "as", "a", "comedy", "show."], translation: "その映画はコメディ番組と同じくらい面白かったです。" },
+  { scrambled: ["This", "apple", "is", "as", "sweet", "as", "candy."], answer: ["This", "apple", "is", "as", "sweet", "as", "candy."], translation: "このリンゴはキャンディと同じくらい甘いです。" },
+  { scrambled: ["My", "phone", "is", "as", "new", "as", "yours."], answer: ["My", "phone", "is", "as", "new", "as", "yours."], translation: "私の携帯はあなたのと同じくらい新しいです。" },
+  { scrambled: ["He", "is", "as", "strong", "as", "a", "bear."], answer: ["He", "is", "as", "strong", "as", "a", "bear."], translation: "彼はクマと同じくらい強いです。" },
+  { scrambled: ["Your", "English", "is", "as", "good", "as", "a", "teacher’s."], answer: ["Your", "English", "is", "as", "good", "as", "a", "teacher’s."], translation: "あなたの英語は先生と同じくらい上手です。" }
+   ],
+   19: 
+   [
+   { scrambled: ["I", "have", "seen", "that", "movie."], answer: ["I", "have", "seen", "that", "movie."], translation: "私はその映画を見たことがあります。" },
+  { scrambled: ["I", "have", "lost", "my", "key."], answer: ["I", "have", "lost", "my", "key."], translation: "私は鍵をなくしました。" },
+  { scrambled: ["I", "have", "finished", "my", "homework."], answer: ["I", "have", "finished", "my", "homework."], translation: "私は宿題を終えました。" },
+  { scrambled: ["I", "have", "visited", "Kyoto."], answer: ["I", "have", "visited", "Kyoto."], translation: "私は京都を訪れたことがあります。" },
+  { scrambled: ["I", "have", "eaten", "sushi", "before."], answer: ["I", "have", "eaten", "sushi", "before."], translation: "私は前に寿司を食べたことがあります。" },
+  { scrambled: ["I", "have", "never", "been", "to", "Hokkaido."], answer: ["I", "have", "never", "been", "to", "Hokkaido."], translation: "私は北海道に行ったことがありません。" },
+  { scrambled: ["I", "have", "read", "that", "book."], answer: ["I", "have", "read", "that", "book."], translation: "私はその本を読んだことがあります。" },
+  { scrambled: ["I", "have", "played", "soccer", "in", "school."], answer: ["I", "have", "played", "soccer", "in", "school."], translation: "私は学校でサッカーをしたことがあります。" },
+  { scrambled: ["I", "have", "forgotten", "his", "name."], answer: ["I", "have", "forgotten", "his", "name."], translation: "私は彼の名前を忘れてしまいました。" },
+  { scrambled: ["I", "have", "taken", "a", "picture."], answer: ["I", "have", "taken", "a", "picture."], translation: "私は写真を撮りました。" }  
+   ],
+   20: 
+   [
+    { scrambled: ["Have", "you", "ever", "seen", "a", "panda?"], answer: ["Have", "you", "ever", "seen", "a", "panda?"], translation: "あなたはパンダを見たことがありますか？" },
+  { scrambled: ["Have", "you", "finished", "your", "homework?"], answer: ["Have", "you", "finished", "your", "homework?"], translation: "あなたは宿題を終えましたか？" },
+  { scrambled: ["Have", "you", "ever", "been", "to", "Osaka?"], answer: ["Have", "you", "ever", "been", "to", "Osaka?"], translation: "あなたは大阪に行ったことがありますか？" },
+  { scrambled: ["Have", "you", "lost", "your", "phone?"], answer: ["Have", "you", "lost", "your", "phone?"], translation: "あなたは携帯をなくしましたか？" },
+  { scrambled: ["Have", "you", "eaten", "breakfast?"], answer: ["Have", "you", "eaten", "breakfast?"], translation: "あなたは朝ごはんを食べましたか？" },
+  { scrambled: ["Have", "you", "read", "this", "book?"], answer: ["Have", "you", "read", "this", "book?"], translation: "あなたはこの本を読んだことがありますか？" },
+  { scrambled: ["Have", "you", "ever", "played", "basketball?"], answer: ["Have", "you", "ever", "played", "basketball?"], translation: "あなたはバスケットボールをしたことがありますか？" },
+  { scrambled: ["Have", "you", "taken", "a", "picture", "today?"], answer: ["Have", "you", "taken", "a", "picture", "today?"], translation: "あなたは今日写真を撮りましたか？" },
+  { scrambled: ["Have", "you", "ever", "tried", "sushi?"], answer: ["Have", "you", "ever", "tried", "sushi?"], translation: "あなたは寿司を食べたことがありますか？" },
+  { scrambled: ["Have", "you", "forgotten", "your", "bag?"], answer: ["Have", "you", "forgotten", "your", "bag?"], translation: "あなたはかばんを忘れましたか？" } 
+   ],
+   21: 
+   [
+   { scrambled: ["I", "think", "that", "English", "is", "fun."], answer: ["I", "think", "that", "English", "is", "fun."], translation: "私は英語が楽しいと思います。" },
+  { scrambled: ["He", "knows", "that", "she", "can", "sing."], answer: ["He", "knows", "that", "she", "can", "sing."], translation: "彼は彼女が歌えることを知っています。" },
+  { scrambled: ["She", "said", "that", "she", "was", "tired."], answer: ["She", "said", "that", "she", "was", "tired."], translation: "彼女は疲れていると言いました。" },
+  { scrambled: ["We", "hope", "that", "he", "is", "okay."], answer: ["We", "hope", "that", "he", "is", "okay."], translation: "私たちは彼が大丈夫だと願っています。" },
+  { scrambled: ["They", "believe", "that", "it", "is", "true."], answer: ["They", "believe", "that", "it", "is", "true."], translation: "彼らはそれが本当だと信じています。" },
+  { scrambled: ["I", "know", "that", "she", "likes", "cats."], answer: ["I", "know", "that", "she", "likes", "cats."], translation: "私は彼女が猫が好きなことを知っています。" },
+  { scrambled: ["He", "thinks", "that", "math", "is", "easy."], answer: ["He", "thinks", "that", "math", "is", "easy."], translation: "彼は数学が簡単だと思っています。" },
+  { scrambled: ["She", "heard", "that", "we", "are", "moving."], answer: ["She", "heard", "that", "we", "are", "moving."], translation: "彼女は私たちが引っ越すと聞きました。" },
+  { scrambled: ["I", "feel", "that", "this", "is", "important."], answer: ["I", "feel", "that", "this", "is", "important."], translation: "私はこれが大事だと感じます。" },
+  { scrambled: ["My", "teacher", "said", "that", "the", "test", "is", "tomorrow."], answer: ["My", "teacher", "said", "that", "the", "test", "is", "tomorrow."], translation: "先生はテストが明日だと言いました。" }  
+   ]  };
+
+  let currentLesson = [], currentIndex = 0, stars = 0, touchTarget = null;
+
+  function startLesson(number) {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+    document.getElementById('lesson-title').textContent = `Lesson ${number}`;
+    currentLesson = lessons[number];
+    currentIndex = 0;
+    stars = 0;
+    document.getElementById('star-count').textContent = stars;
+    updateProgressBar();
+    resetTranslation();
+    showNextQuestion();
+  }
+
+  function goBackToMenu() {
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'block';
+    document.getElementById('sentence-container').innerHTML = '';
+    document.getElementById('word-bank').innerHTML = '';
+    resetTranslation();
+    document.getElementById('progress-bar').style.width = '0%';
+  }
+
+  function showNextQuestion() {
+    const sentence = currentLesson[currentIndex];
+    if (!sentence) {
+      showStarConfetti();
+      setTimeout(() => alert('🎉 Lesson Complete!'), 300);
+      return;
+    }
+
+    const container = document.getElementById('sentence-container');
+    const bank = document.getElementById('word-bank');
+    resetTranslation();
+    container.innerHTML = '';
+    bank.innerHTML = '';
+    updateProgressBar();
+
+    sentence.answer.forEach(() => {
+      const dropSpot = document.createElement('div');
+      dropSpot.className = 'word drop';
+      dropSpot.ondragover = e => e.preventDefault();
+      dropSpot.ondrop = drop;
+      container.appendChild(dropSpot);
+    });
+
+    sentence.scrambled.forEach(word => {
+      const wordDiv = document.createElement('div');
+      wordDiv.className = 'word';
+      wordDiv.textContent = word;
+      wordDiv.draggable = true;
+      wordDiv.ondragstart = drag;
+      wordDiv.ontouchstart = touchStart;
+      wordDiv.ontouchmove = touchMove;
+      wordDiv.ontouchend = touchEnd;
+      bank.appendChild(wordDiv);
+    });
+  }
+
+  function drag(e) {
+    e.dataTransfer.setData('text', e.target.textContent);
+  }
+
+  function drop(e) {
+    if (!e.target.textContent) {
+      const text = e.dataTransfer.getData('text');
+      e.target.textContent = text;
+      removeWordFromBank(text);
+      checkAnswer();
+    }
+  }
+
+  function touchStart(e) {
+    touchTarget = e.target;
+    touchTarget.style.position = 'absolute';
+    touchTarget.style.zIndex = '1000';
+  }
+
+  function touchMove(e) {
+    if (!touchTarget) return;
+    const touch = e.touches[0];
+    touchTarget.style.left = touch.clientX - touchTarget.offsetWidth / 2 + 'px';
+    touchTarget.style.top = touch.clientY - touchTarget.offsetHeight / 2 + 'px';
+  }
+
+  function touchEnd(e) {
+    const dropSpots = document.querySelectorAll('.drop');
+    let dropped = false;
+    dropSpots.forEach(spot => {
+      const rect = spot.getBoundingClientRect();
+      const touch = e.changedTouches[0];
+      if (!spot.textContent &&
+          touch.clientX >= rect.left &&
+          touch.clientX <= rect.right &&
+          touch.clientY >= rect.top &&
+          touch.clientY <= rect.bottom) {
+        spot.textContent = touchTarget.textContent;
+        removeWordFromBank(touchTarget.textContent);
+        dropped = true;
+      }
+    });
+    touchTarget.style.position = '';
+    touchTarget.style.left = '';
+    touchTarget.style.top = '';
+    touchTarget.style.zIndex = '';
+    touchTarget = null;
+    if (dropped) checkAnswer();
+  }
+
+  function removeWordFromBank(word) {
+    const wordBankWords = document.querySelectorAll('#word-bank .word');
+    wordBankWords.forEach(w => {
+      if (w.textContent === word) w.remove();
+    });
+  }
+
+  function checkAnswer() {
+    const dropSpots = document.querySelectorAll('#sentence-container .drop');
+    const userAnswer = Array.from(dropSpots).map(div => div.textContent);
+    const correct = currentLesson[currentIndex].answer;
+
+    if (userAnswer.every((w, i) => w === correct[i])) {
+      stars++;
+      document.getElementById('star-count').textContent = stars;
+      showStarAnimation();
+      speakSentence(correct.join(' '));
+      const jp = currentLesson[currentIndex].translation;
+      document.getElementById('translation').textContent = `🇯🇵 ${jp}`;
+      document.getElementById('translation').classList.add('visible');
+      currentIndex++;
+      setTimeout(showNextQuestion, 1800);
+    } else if (userAnswer.every(w => w !== '')) {
+      dropSpots.forEach(spot => spot.classList.add('flash-red'));
+      setTimeout(() => {
+        dropSpots.forEach((spot, i) => {
+          spot.classList.remove('flash-red');
+          spot.textContent = correct[i];
+        });
+        speakSentence(correct.join(' '));
+        const jp = currentLesson[currentIndex].translation;
+        document.getElementById('translation').textContent = `🇯🇵 ${jp}`;
+        document.getElementById('translation').classList.add('visible');
+        currentIndex++;
+        setTimeout(showNextQuestion, 2000);
+      }, 800);
+    }
+  }
+
+  function updateProgressBar() {
+    const progress = (currentIndex / currentLesson.length) * 100;
+    document.getElementById('progress-bar').style.width = progress + '%';
+  }
+
+  function resetTranslation() {
+    const translation = document.getElementById('translation');
+    translation.textContent = '';
+    translation.classList.remove('visible');
+  }
+
+  function speakSentence(text) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.pitch = 1.1;
+      utterance.rate = 0.9;
+      utterance.volume = 1;
+      speechSynthesis.speak(utterance);
+    }
+  }
+
+  function showStarAnimation() {
+    const star = document.createElement('div');
+    star.className = 'star-float';
+    star.textContent = '⭐';
+    document.getElementById('star-animation').appendChild(star);
+    setTimeout(() => star.remove(), 1000);
+    document.getElementById('correct-sound').play();
+  }
+
+  function showStarConfetti() {
+    confetti({
+      particleCount: 100,
+      spread: 90,
+      origin: { y: 0.6 },
+      emojis: ["⭐", "✨", "🌟"],
+      scalar: 1.5,
+      shapes: ["text"]
+    });
+  }
+</script>
+</body>
+</html>
+
+
+
