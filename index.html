@@ -124,30 +124,9 @@
 <body>
   <div id="start-screen">
     <h1>Unscramble!</h1>
-    <!-- Buttons for lesson selection -->
-    <div>
-      <button onclick="startLesson(1)">未来形</button>
-      <button onclick="startLesson(2)">するとき</button>
-      <button onclick="startLesson(3)">もし…</button>
-      <button onclick="startLesson(4)">…と思う</button>
-      <button onclick="startLesson(5)">きっと…だ</button>
-      <button onclick="startLesson(6)">すること</button>
-      <button onclick="startLesson(7)">するために</button>
-      <button onclick="startLesson(8)">しなければならない</button>
-      <button onclick="startLesson(9)">してはいけない</button>
-      <button onclick="startLesson(10)">があります</button>
-      <button onclick="startLesson(11)">すること</button>
-      <button onclick="startLesson(12)">しなければならない・してなくてもよい</button>
-      <button onclick="startLesson(13)">人にものを…する</button>
-      <button onclick="startLesson(14)">AをBと呼ぶ</button>
-      <button onclick="startLesson(15)">どのように…する</button>
-      <button onclick="startLesson(16)">...よりも</button>
-      <button onclick="startLesson(17)">最上級</button>
-      <button onclick="startLesson(18)">…と同じくらい</button>
-      <button onclick="startLesson(19)">したことがあります</button>
-      <button onclick="startLesson(20)">したことがありますか</button>
-      <button onclick="startLesson(21)">人に…が～だということおをする</button>
-    </div>
+    <p>Type the number of the lesson you want to play (1-21):</p>
+    <input type="number" id="lesson-number" min="1" max="21" placeholder="Enter lesson number" />
+    <button onclick="startLessonFromInput()">Start Lesson</button>
   </div>
 
   <div id="game-screen" style="display:none;">
@@ -171,51 +150,26 @@
       { scrambled: ["He", "going", "is", "to", "baseball", "play", "not"], answer: ["He", "is", "not", "going", "to", "play", "baseball."], translation: "彼は野球をする予定ではありません。" },
       { scrambled: ["hamburgers", "won't", "tonight", "eat", "We"], answer: ["We", "won't", "eat", "hamburgers", "tonight."], translation: "私たちは今夜ハンバーガーを食べません。" },
       { scrambled: ["to", "not", "she", "going", "is", "math", "study"], answer: ["She", "is", "not", "going", "to", "study", "math."], translation: "彼女は数学を勉強する予定ではありません。" },
-      { scrambled: ["watch", "They", "watch", "a", "tonight.", "movie"], answer: ["They", "won't", "watch", "a", "movie", "tonight."], translation: "彼らは今夜映画を見ません。" },
-      { scrambled: ["My", "cook", "dinner", "will", "father", "tonight."], answer: ["My", "father", "will", "cook", "dinner", "tonight."], translation: "私の父は今夜夕食を作ります。" },
-      { scrambled: ["to", "she", "Is", "going", "TV?", "watch"], answer: ["Is", "she", "going", "to", "watch", "TV?"], translation: "彼女はテレビを見る予定ですか？" },
-      { scrambled: ["am", "I", "going", "to", "letter", "a", "write."], answer: ["I", "am", "going", "to", "write", "a", "letter."], translation: "私は手紙を書く予定です。" },
-      { scrambled: ["soon", "grandparents", "will", "our", "visit", "We"], answer: ["We", "will", "visit", "our", "grandparents", "soon."], translation: "私たちはすぐに祖父母を訪れます。" }
+      { scrambled: ["watch", "They", "watch", "a", "tonight.", "movie"], answer: ["They", "won't", "watch", "a", "movie", "tonight."], translation: "彼らは今夜映画を見ません。" }
     ],
+    // Example for lesson 2, add your lessons here...
     2: [
-   { scrambled: ["I", "wash", "my", "hands", "before", "I", "eat."], answer: ["I", "wash", "my", "hands", "before", "I", "eat."], translation: "私は食べる前に手を洗います。" },
-  { scrambled: ["He", "calls", "me", "when", "he", "gets", "home."], answer: ["He", "calls", "me", "when", "he", "gets", "home."], translation: "彼は家に着いたとき私に電話します。" },
-  { scrambled: ["She", "was", "reading", "a", "book", "while", "I", "was", "cooking."], answer: ["She", "was", "reading", "a", "book", "while", "I", "was", "cooking."], translation: "私が料理している間、彼女は本を読んでいました。" },
-  { scrambled: ["We", "played", "outside", "after", "we", "finished", "lunch."], answer: ["We", "played", "outside", "after", "we", "finished", "lunch."], translation: "昼ごはんの後に外で遊びました。" },
-  { scrambled: ["When", "you", "see", "him,", "please", "say", "hello."], answer: ["When", "you", "see", "him,", "please", "say", "hello."], translation: "彼に会ったら、あいさつしてね。" },
-  { scrambled: ["Before", "you", "go", "to", "bed,", "brush", "your", "teeth."], answer: ["Before", "you", "go", "to", "bed,", "brush", "your", "teeth."], translation: "寝る前に歯をみがいてください。" },
-  { scrambled: ["I", "was", "listening", "to", "music", "when", "she", "arrived."], answer: ["I", "was", "listening", "to", "music", "when", "she", "arrived."], translation: "彼女が来たとき、私は音楽を聞いていました。" },
-  { scrambled: ["He", "always", "drinks", "water", "after", "he", "runs."], answer: ["He", "always", "drinks", "water", "after", "he", "runs."], translation: "彼は走った後、いつも水を飲みます。" },
-  { scrambled: ["While", "we", "were", "walking,", "it", "started", "to", "rain."], answer: ["While", "we", "were", "walking,", "it", "started", "to", "rain."], translation: "歩いている間に雨が降り始めました。" },
-  { scrambled: ["Don't", "talk", "while", "you", "are", "eating."], answer: ["Don't", "talk", "while", "you", "are", "eating."], translation: "食べている間に話さないでください。" }
+      { scrambled: ["I", "wash", "my", "hands", "before", "I", "eat."], answer: ["I", "wash", "my", "hands", "before", "I", "eat."], translation: "私は食べる前に手を洗います。" },
+      // Add more scrambled sentences...
     ],
-    3: [
-      { scrambled: ['fail.', 'I'll', 'If', 'study,', "don't", 'I'], answer: ['If', 'I', "don't", 'study,', 'I'll', 'fail.'], translation: 'もし勉強しなければ、私は落ちます。' },
-    { scrambled: ['If', 'are', 'take', 'rest.', 'a', 'you', 'tired,'], answer: ['If', 'you', 'are', 'tired,', 'take', 'a', 'rest.'], translation: '疲れていたら、休んでください。' },
-    { scrambled: ['be', 'you.', 'see', 'happy', 'I'll, 'if', 'I'], answer: ['I'll', 'be', 'happy', 'if', 'I', 'see', 'you.'], translation: 'もしあなたに会えたら、私はうれしいです。' },
-    { scrambled: ['the', 'studies,', 'he', 'pass', 'he'll, 'test.', 'If'], answer: ['If', 'he', 'studies,', 'he'll', 'pass', 'the', 'test.'], translation: '彼が勉強すれば、テストに合格します。' },
-   { scrambled: ['call', 'I', 'late,', 'will', 'be', 'you', 'If', 'are'],answer: ['If', 'you', 'are', 'late,', 'I', 'will', 'call'],translation: 'もしあなたが遅れたら、私は電話します。'},
-    { scrambled: ['If', 'go', 'rains,', 'park.', 'it', "won't", 'we', 'the', 'to'], answer: ['If', 'it', 'rains,', 'we', "won't", 'go', 'to', 'the', 'park.'], translation: 'もし雨が降ったら、公園に行きません。' },
-    { scrambled: ['you'll', 'the', 'hurry,', "don't", 'miss', 'If', 'bus.', 'you'], answer: ['If', 'you', "don't", 'hurry,', 'you'll', 'miss', 'the', 'bus.'], translation: '急がなければ、バスに乗り遅れます。' },
-    { scrambled: ["won't", 'go', 'cold.', "it's", 'I', 'outside', 'if'], answer: ['I', "won't", 'go', 'outside', 'if', "it's", 'cold.'], translation: '寒ければ、外に出ません。' },
-    { scrambled: ['something.', 'you', 'eat', 'If', 'are', 'hungry,'], answer: ['If', 'you', 'are', 'hungry,', 'eat', 'something.'], translation: 'お腹がすいたら、何かを食べてください。' },
-    { scrambled: ['I', 'me,', 'be', 'help', 'If', 'you.', 'happy', 'will'], answer: ['If', 'you', 'help', 'me,', 'I', 'will', 'be', 'happy.'], translation: '手伝ってくれたら、私はうれしいです。。' }
-  ],
-    4: [
-      { scrambled: ['handsome.', 'think', 'that', 'is', 'I', 'he'], answer: ['I', 'think', 'that', 'he', 'is', 'handsome.'], translation: '私は彼がハンサムだと思います。' },
-    { scrambled: ['like', 'I', 'that', 'She', 'knows', 'music.'], answer: ['She', 'knows', 'that', 'I', 'like', 'music.'], translation: '彼女は私が音楽が好きだと知っています。' },
-    { scrambled: ['I', 'that', 'can', 'we', 'hope', 'win.'], answer: ['I', 'hope', 'that', 'we', 'can', 'win.'], translation: '私たちが勝てることを願っています。' },
-    { scrambled: ['thinks', 'English', 'fun.', 'that', 'He', 'is'], answer: ['He', 'thinks', 'that', 'English', 'is', 'fun.'], translation: '彼は英語が楽しいと思っています。' },
-    { scrambled: ['is', 'that', 'I', 'hear', 'sick.', 'she'], answer: ['I', 'hear', 'that', 'she', 'is', 'sick.'], translation: '彼女が病気だと聞きました。' },
-    { scrambled: ['it', 'is', 'think', 'that', "don't", 'They', 'easy.'], answer: ['They', "don't", 'think', 'that', 'it', 'is', 'easy.'], translation: '彼らはそれが簡単だとは思っていません。' },
-    { scrambled: ['I', 'that', "don't", 'know', 'boy.'], answer: ['I', "don't", 'know', 'that', 'boy.'], translation: '私はその男の子を知りません。' },
-    { scrambled: ['difficult.', 'test', 'think', 'We', 'was', 'the', 'that'], answer: ['We', 'think', 'that', 'the', 'test', 'was', 'difficult.'], translation: '私たちはテストが難しかったと思います。' },
-    { scrambled: ['I', 'am', 'My', 'mother', 'that', 'knows', 'tired.'], answer: ['My', 'mother', 'knows', 'that', 'I', 'am', 'tired.'], translation: '母は私が疲れていると知っています。' },
-    { scrambled: ['I', 'feel', 'better.', 'that', 'hope', 'you'], answer: ['I', 'hope', 'that', 'you', 'feel', 'better.'], translation: 'あなたの体調がよくなることを願っています。' }
-  ]
+    // Add more lessons (up to lesson 21)
   };
 
-  let currentLesson = [], currentIndex = 0, stars = 0, touchTarget = null;
+  let currentLesson = [], currentIndex = 0, stars = 0;
+
+  function startLessonFromInput() {
+    const lessonNumber = document.getElementById('lesson-number').value;
+    if (lessonNumber >= 1 && lessonNumber <= 21) {
+      startLesson(lessonNumber);
+    } else {
+      alert("Please enter a valid lesson number (1-21).");
+    }
+  }
 
   function startLesson(number) {
     document.getElementById('start-screen').style.display = 'none';
@@ -268,9 +222,6 @@
       wordDiv.textContent = word;
       wordDiv.draggable = true;
       wordDiv.ondragstart = drag;
-      wordDiv.ontouchstart = touchStart;
-      wordDiv.ontouchmove = touchMove;
-      wordDiv.ontouchend = touchEnd;
       bank.appendChild(wordDiv);
     });
   }
@@ -286,43 +237,6 @@
       removeWordFromBank(text);
       checkAnswer();
     }
-  }
-
-  function touchStart(e) {
-    touchTarget = e.target;
-    touchTarget.style.position = 'absolute';
-    touchTarget.style.zIndex = '1000';
-  }
-
-  function touchMove(e) {
-    if (!touchTarget) return;
-    const touch = e.touches[0];
-    touchTarget.style.left = touch.clientX - touchTarget.offsetWidth / 2 + 'px';
-    touchTarget.style.top = touch.clientY - touchTarget.offsetHeight / 2 + 'px';
-  }
-
-  function touchEnd(e) {
-    const dropSpots = document.querySelectorAll('.drop');
-    let dropped = false;
-    dropSpots.forEach(spot => {
-      const rect = spot.getBoundingClientRect();
-      const touch = e.changedTouches[0];
-      if (!spot.textContent &&
-          touch.clientX >= rect.left &&
-          touch.clientX <= rect.right &&
-          touch.clientY >= rect.top &&
-          touch.clientY <= rect.bottom) {
-        spot.textContent = touchTarget.textContent;
-        removeWordFromBank(touchTarget.textContent);
-        dropped = true;
-      }
-    });
-    touchTarget.style.position = '';
-    touchTarget.style.left = '';
-    touchTarget.style.top = '';
-    touchTarget.style.zIndex = '';
-    touchTarget = null;
-    if (dropped) checkAnswer();
   }
 
   function removeWordFromBank(word) {
